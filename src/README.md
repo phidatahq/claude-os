@@ -1,6 +1,6 @@
-## Claude OS (by Phidata)
+## LLM OS
 
-This repo contains the code for running the Anthropic Claude Operating System in `dev` and `prd`:
+This repo contains the code for running the LLM OS in `dev` and `prd`:
 
 1. `dev`: A development environment running locally on docker
 2. `prd`: A production environment running on AWS ECS
@@ -9,7 +9,7 @@ This repo contains the code for running the Anthropic Claude Operating System in
 
 1. Clone the git repo
 
-> from the `src` dir:
+> from the `llm-os` dir:
 
 2. Create + activate a virtual env:
 
@@ -48,10 +48,10 @@ cp example.env .env
 
 2. Export credentials
 
-We use Claude Sonnet 3.5 as the LLM, so export your Anthropic API Key
+We use gpt-4o as the LLM, so export your OpenAI API Key
 
 ```sh
-export ANTHROPIC_API_KEY=sk-***
+export OPENAI_API_KEY=sk-***
 ```
 
 - To use Exa for research, export your EXA_API_KEY (get it from [here](https://dashboard.exa.ai/api-keys))
