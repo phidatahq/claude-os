@@ -1,2 +1,2 @@
 # claude-os
-Claude Operating System
+Anthropic Claude Operating System
