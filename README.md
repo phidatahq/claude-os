@@ -1,4 +1,4 @@
-# Claude OS (by Phidata)
+# Claude Sonnet 3.5 OS (by Phidata)
 
 This repo contains the code for running the Anthropic Claude Operating System
 
