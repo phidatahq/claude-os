@@ -2,17 +2,16 @@ from typing import List
 
 import nest_asyncio
 import streamlit as st
-
 from phi.assistant import Assistant
 from phi.document import Document
 from phi.document.reader.pdf import PDFReader
 from phi.document.reader.website import WebsiteReader
-from phi.tools.streamlit.components import get_username_sidebar, check_password
 from phi.utils.log import logger
 
-from ai.assistants import get_llm_os
+from assistant import get_llm_os  # type: ignore
 
 nest_asyncio.apply()
+
 st.set_page_config(
     page_title="Claude OS (by Phidata)",
     page_icon=":orange_heart:",
@@ -20,27 +19,17 @@ st.set_page_config(
 st.title("Claude OS (by Phidata)")
 st.markdown("##### :orange_heart: built using [phidata](https://github.com/phidatahq/phidata)")
 
-with st.expander(":rainbow[:point_down: How to use]"):
-    st.markdown(
-        "- Add blog post to knowledge: https://blog.samaltman.com/what-i-wish-someone-had-told-me and ask: what did sam altman wish he knew?"
-    )
-    st.markdown("- Test Web search: Whats happening in france?")
-    st.markdown("- Test Calculator: What is 10!")
-    st.markdown("- Test Finance: What is the price of AAPL?")
-    st.markdown(
-        "- Test Finance: Write a comparison between nvidia and amd, use all finance tools available and summarize the key points"
-    )
-    st.markdown("- Test Research: Write a report on Hashicorp IBM acquisition")
-
 
 def main() -> None:
-    # Get username
-    user_id = get_username_sidebar()
-    if user_id:
-        st.sidebar.info(f":technologist: User: {user_id}")
-    else:
-        st.write(":technologist: Please enter a username")
-        return
+    # Get LLM Model
+    llm_id = "claude-3-5-sonnet-20240620"
+    # Set llm_id in session state
+    if "llm_id" not in st.session_state:
+        st.session_state["llm_id"] = llm_id
+    # Restart the assistant if llm_id changes
+    elif st.session_state["llm_id"] != llm_id:
+        st.session_state["llm_id"] = llm_id
+        restart_assistant()
 
     # Sidebar checkboxes for selecting tools
     st.sidebar.markdown("### Select Tools")
@@ -75,34 +64,62 @@ def main() -> None:
     # Get ddg_search_enabled from session state if set
     ddg_search_enabled = st.session_state["ddg_search_enabled"]
     # Checkbox for enabling web search
-    ddg_search = st.sidebar.checkbox(
-        "Web Search", value=ddg_search_enabled, help="Enable web search using DuckDuckGo."
-    )
+    ddg_search = st.sidebar.checkbox("Web Search", value=ddg_search_enabled, help="Enable web search using DuckDuckGo.")
     if ddg_search_enabled != ddg_search:
         st.session_state["ddg_search_enabled"] = ddg_search
         ddg_search_enabled = ddg_search
         restart_assistant()
 
-    # Enable finance tools
-    if "finance_tools_enabled" not in st.session_state:
-        st.session_state["finance_tools_enabled"] = True
-    # Get finance_tools_enabled from session state if set
-    finance_tools_enabled = st.session_state["finance_tools_enabled"]
+    # Enable shell tools
+    if "shell_tools_enabled" not in st.session_state:
+        st.session_state["shell_tools_enabled"] = False
+    # Get shell_tools_enabled from session state if set
+    shell_tools_enabled = st.session_state["shell_tools_enabled"]
     # Checkbox for enabling shell tools
-    finance_tools = st.sidebar.checkbox(
-        "Yahoo Finance", value=finance_tools_enabled, help="Enable finance tools."
-    )
-    if finance_tools_enabled != finance_tools:
-        st.session_state["finance_tools_enabled"] = finance_tools
-        finance_tools_enabled = finance_tools
+    shell_tools = st.sidebar.checkbox("Shell Tools", value=shell_tools_enabled, help="Enable shell tools.")
+    if shell_tools_enabled != shell_tools:
+        st.session_state["shell_tools_enabled"] = shell_tools
+        shell_tools_enabled = shell_tools
         restart_assistant()
 
     # Sidebar checkboxes for selecting team members
     st.sidebar.markdown("### Select Team Members")
 
+    # Enable Data Analyst
+    if "data_analyst_enabled" not in st.session_state:
+        st.session_state["data_analyst_enabled"] = False
+    # Get data_analyst_enabled from session state if set
+    data_analyst_enabled = st.session_state["data_analyst_enabled"]
+    # Checkbox for enabling web search
+    data_analyst = st.sidebar.checkbox(
+        "Data Analyst",
+        value=data_analyst_enabled,
+        help="Enable the Data Analyst assistant for data related queries.",
+    )
+    if data_analyst_enabled != data_analyst:
+        st.session_state["data_analyst_enabled"] = data_analyst
+        data_analyst_enabled = data_analyst
+        restart_assistant()
+
+    # Enable Python Assistant
+    if "python_assistant_enabled" not in st.session_state:
+        st.session_state["python_assistant_enabled"] = False
+    # Get python_assistant_enabled from session state if set
+    python_assistant_enabled = st.session_state["python_assistant_enabled"]
+    # Checkbox for enabling web search
+    python_assistant = st.sidebar.checkbox(
+        "Python Assistant",
+        value=python_assistant_enabled,
+        help="Enable the Python Assistant for writing and running python code.",
+    )
+    if python_assistant_enabled != python_assistant:
+        st.session_state["python_assistant_enabled"] = python_assistant
+        python_assistant_enabled = python_assistant
+        restart_assistant()
+
     # Enable Research Assistant
     if "research_assistant_enabled" not in st.session_state:
-        st.session_state["research_assistant_enabled"] = True
+        st.session_state["research_assistant_enabled"] = False
     # Get research_assistant_enabled from session state if set
     research_assistant_enabled = st.session_state["research_assistant_enabled"]
     # Checkbox for enabling web search
@@ -116,17 +133,36 @@ def main() -> None:
         research_assistant_enabled = research_assistant
         restart_assistant()
 
+    # Enable Investment Assistant
+    if "investment_assistant_enabled" not in st.session_state:
+        st.session_state["investment_assistant_enabled"] = False
+    # Get investment_assistant_enabled from session state if set
+    investment_assistant_enabled = st.session_state["investment_assistant_enabled"]
+    # Checkbox for enabling web search
+    investment_assistant = st.sidebar.checkbox(
+        "Investment Assistant",
+        value=investment_assistant_enabled,
+        help="Enable the investment assistant. NOTE: This is not financial advice.",
+    )
+    if investment_assistant_enabled != investment_assistant:
+        st.session_state["investment_assistant_enabled"] = investment_assistant
+        investment_assistant_enabled = investment_assistant
+        restart_assistant()
+
     # Get the assistant
     llm_os: Assistant
     if "llm_os" not in st.session_state or st.session_state["llm_os"] is None:
-        logger.info("---*--- Creating Claude OS (by Phidata) ---*---")
+        logger.info(f"---*--- Creating {llm_id} Claude OS (by Phidata) ---*---")
         llm_os = get_llm_os(
-            user_id=user_id,
+            llm_id=llm_id,
             calculator=calculator_enabled,
             ddg_search=ddg_search_enabled,
             file_tools=file_tools_enabled,
-            finance_tools=finance_tools_enabled,
+            shell_tools=shell_tools_enabled,
+            data_analyst=data_analyst_enabled,
+            python_assistant=python_assistant_enabled,
             research_assistant=research_assistant_enabled,
+            investment_assistant=investment_assistant_enabled,
         )
         st.session_state["llm_os"] = llm_os
     else:
@@ -136,7 +172,7 @@ def main() -> None:
     try:
         st.session_state["llm_os_run_id"] = llm_os.create_run()
     except Exception:
-        st.warning("Could not create assistant, is the database running?")
+        st.warning("Could not create Claude OS (by Phidata) run, is the database running?")
         return
 
     # Load existing messages
@@ -146,7 +182,7 @@ def main() -> None:
         st.session_state["messages"] = assistant_chat_history
     else:
         logger.debug("No chat history found")
-        st.session_state["messages"] = [{"role": "assistant", "content": "Ask me anything..."}]
+        st.session_state["messages"] = [{"role": "assistant", "content": "Ask me questions..."}]
 
     # Prompt for user input
     if prompt := st.chat_input():
@@ -164,14 +200,14 @@ def main() -> None:
     if last_message.get("role") == "user":
         question = last_message["content"]
         with st.chat_message("assistant"):
-            resp_container = st.empty()
             response = ""
+            resp_container = st.empty()
             for delta in llm_os.run(question):
                 response += delta  # type: ignore
                 resp_container.markdown(response)
             st.session_state["messages"].append({"role": "assistant", "content": response})
 
-    # Load knowledge base
+    # Load Claude OS (by Phidata) knowledge base
     if llm_os.knowledge_base:
         # -*- Add websites to knowledge base
         if "url_scrape_key" not in st.session_state:
@@ -203,15 +239,15 @@ def main() -> None:
         )
         if uploaded_file is not None:
             alert = st.sidebar.info("Processing PDF...", icon="🧠")
-            file_name = uploaded_file.name.split(".")[0]
-            if f"{file_name}_uploaded" not in st.session_state:
+            auto_rag_name = uploaded_file.name.split(".")[0]
+            if f"{auto_rag_name}_uploaded" not in st.session_state:
                 reader = PDFReader()
-                file_documents: List[Document] = reader.read(uploaded_file)
-                if file_documents:
-                    llm_os.knowledge_base.load_documents(file_documents, upsert=True)
+                auto_rag_documents: List[Document] = reader.read(uploaded_file)
+                if auto_rag_documents:
+                    llm_os.knowledge_base.load_documents(auto_rag_documents, upsert=True)
                 else:
                     st.sidebar.error("Could not read PDF")
-                st.session_state[f"{file_name}_uploaded"] = True
+                st.session_state[f"{auto_rag_name}_uploaded"] = True
             alert.empty()
 
     if llm_os.knowledge_base and llm_os.knowledge_base.vector_db:
@@ -229,18 +265,21 @@ def main() -> None:
                         _team_member_memory_container.json(team_member.memory.get_llm_messages())
 
     if llm_os.storage:
-        assistant_run_ids: List[str] = llm_os.storage.get_all_run_ids(user_id=user_id)
-        new_assistant_run_id = st.sidebar.selectbox("Run ID", options=assistant_run_ids)
-        if st.session_state["llm_os_run_id"] != new_assistant_run_id:
-            logger.info(f"---*--- Loading run: {new_assistant_run_id} ---*---")
+        llm_os_run_ids: List[str] = llm_os.storage.get_all_run_ids()
+        new_llm_os_run_id = st.sidebar.selectbox("Run ID", options=llm_os_run_ids)
+        if st.session_state["llm_os_run_id"] != new_llm_os_run_id:
+            logger.info(f"---*--- Loading {llm_id} run: {new_llm_os_run_id} ---*---")
             st.session_state["llm_os"] = get_llm_os(
-                user_id=user_id,
-                run_id=new_assistant_run_id,
+                llm_id=llm_id,
                 calculator=calculator_enabled,
                 ddg_search=ddg_search_enabled,
                 file_tools=file_tools_enabled,
-                finance_tools=finance_tools_enabled,
+                shell_tools=shell_tools_enabled,
+                data_analyst=data_analyst_enabled,
+                python_assistant=python_assistant_enabled,
                 research_assistant=research_assistant_enabled,
+                investment_assistant=investment_assistant_enabled,
+                run_id=new_llm_os_run_id,
             )
             st.rerun()
 
@@ -259,5 +298,4 @@ def restart_assistant():
     st.rerun()
 
 
-if check_password():
-    main()
+main()

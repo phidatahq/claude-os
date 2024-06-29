@@ -1,57 +1,33 @@
-## Claude OS (by Phidata)
+# Claude OS (by Phidata)
 
-This repo contains the code for running the Anthropic Claude Operating System in `dev` and `prd`:
+This repo contains the code for running the Anthropic Claude Operating System
 
-1. `dev`: A development environment running locally on docker
-2. `prd`: A production environment running on AWS ECS
+Inspired by Andrej Karpathy [in this tweet](https://twitter.com/karpathy/status/1723140519554105733), [this tweet](https://twitter.com/karpathy/status/1707437820045062561) and [this video](https://youtu.be/zjkBMFhNj_g?t=2535).
 
-## Setup Workspace
 
-1. Clone the git repo
+## Running Claude OS:
 
-> from the `src` dir:
+> Note: Fork and clone this repository if needed
 
-2. Create + activate a virtual env:
+### 1. Create a virtual environment
 
-```sh
-python3 -m venv aienv
-source aienv/bin/activate
+```shell
+python3 -m venv ~/.venvs/aienv
+source ~/.venvs/aienv/bin/activate
 ```
 
-3. Install `phidata`:
+### 2. Install libraries
 
-```sh
-pip install 'phidata[aws]'
+```shell
+pip install -r cookbook/llm_os/requirements.txt
 ```
 
-4. Setup workspace:
+### 3. Export credentials
 
-```sh
-phi ws setup
-```
+- Our implementation uses Claude Sonnet 3.5, so export your Anthropic API Key
 
-5. Copy `workspace/example_secrets` to `workspace/secrets`:
-
-```sh
-cp -r workspace/example_secrets workspace/secrets
-```
-
-6. Optional: Create `.env` file:
-
-```sh
-cp example.env .env
-```
-
-## Run LLM OS locally
-
-1. Install [docker desktop](https://www.docker.com/products/docker-desktop)
-
-2. Export credentials
-
-We use Claude Sonnet 3.5 as the LLM, so export your Anthropic API Key
-
-```sh
-export ANTHROPIC_API_KEY=sk-***
+```shell
+export ANTHROPIC_API_KEY=***
 ```
 
 - To use Exa for research, export your EXA_API_KEY (get it from [here](https://dashboard.exa.ai/api-keys))
@@ -60,19 +36,58 @@ export ANTHROPIC_API_KEY=sk-***
 export EXA_API_KEY=xxx
 ```
 
-**OR** set them in the `.env` file
+### 4. Run PgVector
 
-3. Start the workspace using:
+We use PgVector to provide long-term memory and knowledge to the Clause OS.
+Please install [docker desktop](https://docs.docker.com/desktop/install/mac-install/) and run PgVector using either the helper script or the `docker run` command.
 
-```sh
-phi ws up
+- Run using a helper script
+
+```shell
+./cookbook/run_pgvector.sh
 ```
 
-- Open [localhost:8501](http://localhost:8501) to view the Streamlit App.
-- If FastApi is enabled, Open [localhost:8000/docs](http://localhost:8000/docs) to view the FastApi docs.
+- OR run using the docker run command
 
-4. Stop the workspace using:
-
-```sh
-phi ws down
+```shell
+docker run -d \
+  -e POSTGRES_DB=ai \
+  -e POSTGRES_USER=ai \
+  -e POSTGRES_PASSWORD=ai \
+  -e PGDATA=/var/lib/postgresql/data/pgdata \
+  -v pgvolume:/var/lib/postgresql/data \
+  -p 5532:5432 \
+  --name pgvector \
+  phidata/pgvector:16
 ```
+
+```powershell
+docker run -d `
+  -e POSTGRES_DB=ai `
+  -e POSTGRES_USER=ai `
+  -e POSTGRES_PASSWORD=ai `
+  -e PGDATA=/var/lib/postgresql/data/pgdata `
+  -v pgvolume:/var/lib/postgresql/data `
+  -p 5532:5432 `
+  --name pgvector `
+  phidata/pgvector:16
+```
+
+### 5. Run the Claude OS App
+
+```shell
+streamlit run cookbook/llm_os/app.py
+```
+
+- Open [localhost:8501](http://localhost:8501) to view Claude OS.
+- Add a news post to knowledge base: https://www.anthropic.com/news/claude-3-5-sonnet
+- Ask: What is Claude 3.5 Sonnet?
+- Web search: Whats happening in france?
+- Calculator: Whats 10!
+- Enable shell tools and ask: is docker running?
+- Enable the Research Assistant and ask: write a report on the ibm hashicorp acquisition
+- Enable the Investment Assistant and ask: shall i invest in nvda?
+
+### 6. Message on [discord](https://discord.gg/4MtYHHrgA8) if you have any questions
+
+### 7. Star ⭐️ the project if you like it.
