@@ -19,7 +19,7 @@ source ~/.venvs/aienv/bin/activate
 ### 2. Install libraries
 
 ```shell
-pip install -r cookbook/llm_os/requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 3. Export credentials
@@ -36,6 +36,12 @@ export ANTHROPIC_API_KEY=***
 export EXA_API_KEY=xxx
 ```
 
+- To use VoyageAI for embeddings, export your VOYAGE_API_KEY (get it from [here](https://dash.voyageai.com/api-keys))
+
+```shell
+export VOYAGE_API_KEY=xxx
+```
+
 ### 4. Run PgVector
 
 We use PgVector to provide long-term memory and knowledge to the Clause OS.
@@ -44,7 +50,7 @@ Please install [docker desktop](https://docs.docker.com/desktop/install/mac-inst
 - Run using a helper script
 
 ```shell
-./cookbook/run_pgvector.sh
+./run_pgvector.sh
 ```
 
 - OR run using the docker run command
@@ -61,6 +67,8 @@ docker run -d \
   phidata/pgvector:16
 ```
 
+ - On Windows
+
 ```powershell
 docker run -d `
   -e POSTGRES_DB=ai `
@@ -76,7 +84,7 @@ docker run -d `
 ### 5. Run the Claude OS App
 
 ```shell
-streamlit run cookbook/llm_os/app.py
+streamlit run app.py
 ```
 
 - Open [localhost:8501](http://localhost:8501) to view Claude OS.
