@@ -15,6 +15,7 @@ from phi.tools.file import FileTools
 from phi.llm.anthropic import Claude
 from phi.knowledge import AssistantKnowledge
 from phi.embedder.openai import OpenAIEmbedder
+from phi.embedder.voyageai import VoyageAIEmbedder
 from phi.assistant.duckdb import DuckDbAssistant
 from phi.assistant.python import PythonAssistant
 from phi.storage.assistant.postgres import PgAssistantStorage
@@ -262,7 +263,7 @@ def get_llm_os(
             vector_db=PgVector2(
                 db_url=db_url,
                 collection="llm_os_documents",
-                embedder=OpenAIEmbedder(model="text-embedding-3-small", dimensions=1536),
+                embedder=VoyageAIEmbedder(model="voyage-large-2", dimensions=1536),
             ),
             # 3 references are added to the prompt when searching the knowledge base
             num_documents=3,
