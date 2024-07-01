@@ -14,7 +14,6 @@ from phi.tools.yfinance import YFinanceTools
 from phi.tools.file import FileTools
 from phi.llm.anthropic import Claude
 from phi.knowledge import AssistantKnowledge
-from phi.embedder.openai import OpenAIEmbedder
 from phi.embedder.voyageai import VoyageAIEmbedder
 from phi.assistant.duckdb import DuckDbAssistant
 from phi.assistant.python import PythonAssistant
